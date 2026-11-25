@@ -56,9 +56,7 @@ pipeline {
         }
 
         stage('Deploy with Ansible') {
-            when {
-                branch 'main'
-            }
+            
 
             steps {
                 echo 'Deploying application to VM1...'
