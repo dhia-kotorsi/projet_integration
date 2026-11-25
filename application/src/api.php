@@ -1,4 +1,4 @@
-<?php
+<?ph
 // API JSON
 //   GET                 : liste des tâches
 //   POST                : ajouter une tâche
