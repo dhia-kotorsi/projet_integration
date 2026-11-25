@@ -1,0 +1,15 @@
+# Configuration privée de l'application
+application/src/config.php
+
+# Variables d'environnement
+.env
+.env.*
+
+# Clés et secrets
+*.pem
+*.key
+*.pub
+vault.yml
+
+# Fichiers temporaires
+*.log

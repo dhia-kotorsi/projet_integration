@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mes tâches</title>
+<style>
+  :root {
+    --fond: #edf0f5; --papier: #fbfcfe; --encre: #18202f; --discret: #5b6678;
+    --accent: #3d3fcf; --accent-clair: #e4e5fb; --ligne: #d3d9e3;
+    --haute: #c2410c; --normale: #8a94a6; --basse: #2f7d9a;
+    --danger: #b3261e; --retard: #b3261e; --ok: #1f7a4d;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --fond: #121722; --papier: #1b2230; --encre: #e8ecf4; --discret: #9aa5b8;
+      --accent: #8b8dff; --accent-clair: #2a2f55; --ligne: #313a4d;
+      --haute: #fb923c; --normale: #7b869a; --basse: #5cb8d6;
+      --danger: #ff8a80; --retard: #ff8a80; --ok: #5fd39a;
+      color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; background: var(--fond); color: var(--encre);
+    font: 16px/1.5 "Segoe UI", system-ui, sans-serif; padding: 2rem 1rem 4rem;
+  }
+  main { max-width: 44rem; margin: 0 auto; }
+  h1 { font: 700 2.4rem/1.1 Georgia, "Times New Roman", serif; margin: 0 0 .75rem; }
+
+  /* Progression */
+  .progression { margin-bottom: 1.5rem; }
+  .progression p { margin: 0 0 .4rem; color: var(--discret); }
+  .barre { height: 8px; background: var(--ligne); border-radius: 99px; overflow: hidden; }
+  .barre > span { display: block; height: 100%; width: 0; background: var(--ok); border-radius: 99px; transition: width .35s ease; }
+
+  /* Champs et boutons */
+  input, select, button { font: inherit; color: inherit; }
+  input[type=text], input[type=search], input[type=date], select {
+    padding: .55rem .7rem; background: var(--papier); border: 1.5px solid var(--ligne);
+    border-radius: 6px; min-width: 0;
+  }
+  button { cursor: pointer; border-radius: 6px; border: 1.5px solid var(--ligne); background: var(--papier); padding: .5rem .85rem; }
+  button:hover { border-color: var(--discret); }
+  button.principal { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  @media (prefers-color-scheme: dark) { button.principal { color: #10131c; } }
+  button.principal:hover { filter: brightness(1.08); }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  label.etiquette { display: flex; flex-direction: column; font-size: .85rem; color: var(--discret); gap: .15rem; }
+
+  /* Formulaire d'ajout */
+  .ajout { background: var(--papier); border: 1.5px solid var(--ligne); border-radius: 8px; padding: .9rem; margin-bottom: 1.25rem; display: grid; gap: .75rem; }
+  .ajout .titre { width: 100%; font-size: 1.05rem; padding: .7rem .9rem; }
+  .ajout .options { display: flex; flex-wrap: wrap; gap: .75rem; align-items: flex-end; }
+  .ajout .options .etiquette { flex: 1 1 8rem; }
+  .ajout .options input, .ajout .options select { width: 100%; }
+  .ajout .principal { padding: .65rem 1.2rem; }
+
+  /* Barre d'outils */
+  .outils { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; margin-bottom: .9rem; }
+  .filtres { display: inline-flex; border: 1.5px solid var(--ligne); border-radius: 6px; overflow: hidden; background: var(--papier); }
+  .filtres button { border: 0; border-radius: 0; background: none; padding: .45rem .8rem; }
+  .filtres button[aria-pressed=true] { background: var(--accent-clair); color: var(--accent); font-weight: 600; }
+  .outils input[type=search] { flex: 1 1 10rem; }
+
+  /* Liste */
+  ul { list-style: none; margin: 0; padding: 0; background: var(--papier); border: 1.5px solid var(--ligne); border-radius: 8px; overflow: hidden; }
+  li { display: flex; align-items: flex-start; gap: .75rem; padding: .8rem .9rem .8rem .8rem; border-bottom: 1px solid var(--ligne); border-left: 5px solid var(--normale); }
+  li:last-child { border-bottom: 0; }
+  li.p2 { border-left-color: var(--haute); }
+  li.p0 { border-left-color: var(--basse); }
+  li.faite { opacity: .65; border-left-color: var(--ligne); }
+  li .corps { flex: 1; min-width: 0; }
+  li .titre-tache { cursor: pointer; overflow-wrap: anywhere; }
+  li.faite .titre-tache { text-decoration: line-through; color: var(--discret); }
+  li input[type=checkbox] { width: 1.25rem; height: 1.25rem; margin-top: .2rem; accent-color: var(--accent); flex: none; }
+  .meta { display: flex; flex-wrap: wrap; gap: .35rem .5rem; margin-top: .3rem; font-size: .85rem; color: var(--discret); }
+  .puce { padding: 0 .55rem; border-radius: 99px; background: var(--accent-clair); color: var(--accent); }
+  .puce.haute { background: transparent; border: 1px solid var(--haute); color: var(--haute); }
+  .puce.retard { background: transparent; border: 1px solid var(--retard); color: var(--retard); font-weight: 600; }
+  .puce.date { background: transparent; border: 1px solid var(--ligne); }
+  .actions { display: flex; gap: .25rem; flex: none; }
+  .actions button { border: 0; background: none; padding: .25rem .5rem; color: var(--discret); }
+  .actions button:hover { background: var(--accent-clair); color: var(--accent); }
+  .actions .suppr:hover { background: color-mix(in srgb, var(--danger) 15%, transparent); color: var(--danger); }
+  .message { display: block; border: 0; padding: 1.5rem .9rem; color: var(--discret); text-align: center; }
+
+  /* Édition en ligne */
+  li.edition { background: var(--accent-clair); }
+  .edition-form { flex: 1; display: grid; gap: .6rem; }
+  .edition-form .titre { width: 100%; }
+  .edition-form .options { display: flex; flex-wrap: wrap; gap: .6rem; }
+  .edition-form .options .etiquette { flex: 1 1 7rem; }
+  .edition-form .options input, .edition-form .options select { width: 100%; }
+  .edition-form .boutons { display: flex; gap: .5rem; }
+
+  .pied { display: flex; justify-content: space-between; align-items: center; margin-top: .9rem; color: var(--discret); font-size: .9rem; gap: 1rem; flex-wrap: wrap; }
+  .pied button { color: var(--danger); }
+  .erreur { color: var(--danger); margin: 0 0 1rem; min-height: 1.5em; }
+  @media (prefers-reduced-motion: reduce) { .barre > span { transition: none; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Mes tâches</h1>
+
+  <div class="progression" aria-live="polite">
+    <p id="progression-texte">&nbsp;</p>
+    <div class="barre"><span id="progression-barre"></span></div>
+  </div>
+
+  <form class="ajout" id="formulaire">
+    <input class="titre" type="text" id="titre" placeholder="Nouvelle tâche" maxlength="200" required aria-label="Titre de la tâche" autocomplete="off">
+    <div class="options">
+      <label class="etiquette">Priorité
+        <select id="priorite">
+          <option value="2">Haute</option>
+          <option value="1" selected>Normale</option>
+          <option value="0">Basse</option>
+        </select>
+      </label>
+      <label class="etiquette">Catégorie
+        <input type="text" id="categorie" list="categories" maxlength="50" placeholder="Ex. Travail" autocomplete="off">
+      </label>
+      <label class="etiquette">Échéance
+        <input type="date" id="echeance">
+      </label>
+      <button class="principal" type="submit">Ajouter</button>
+    </div>
+  </form>
+  <datalist id="categories"></datalist>
+
+  <p class="erreur" id="erreur" role="alert"></p>
+
+  <div class="outils">
+    <div class="filtres" role="group" aria-label="Filtrer par état">
+      <button type="button" data-filtre="toutes" aria-pressed="true">Toutes <span></span></button>
+      <button type="button" data-filtre="afaire" aria-pressed="false">À faire <span></span></button>
+      <button type="button" data-filtre="faites" aria-pressed="false">Terminées <span></span></button>
+    </div>
+    <input type="search" id="recherche" placeholder="Rechercher" aria-label="Rechercher une tâche">
+    <select id="filtre-categorie" aria-label="Filtrer par catégorie"><option value="">Toutes les catégories</option></select>
+    <select id="tri" aria-label="Trier">
+      <option value="priorite">Tri : priorité</option>
+      <option value="echeance">Tri : échéance</option>
+      <option value="recentes">Tri : plus récentes</option>
+    </select>
+  </div>
+
+  <ul id="liste"></ul>
+
+  <div class="pied">
+    <span id="resume"></span>
+    <button type="button" id="vider" hidden>Supprimer les terminées</button>
+  </div>
+</main>
+
+<script>
+const API = 'api.php';
+const PRIORITES = { 2: 'Haute', 1: 'Normale', 0: 'Basse' };
+const $ = (id) => document.getElementById(id);
+let taches = [];
+let enEdition = null;
+const etat = { filtre: 'toutes', categorie: '', recherche: '', tri: 'priorite' };
+
+/* ---------- Réseau ---------- */
+async function appel(url, options) {
+  const r = await fetch(url, options);
+  let data = {};
+  try { data = await r.json(); } catch { /* réponse vide */ }
+  if (!r.ok) throw new Error(data.erreur || 'Erreur inconnue');
+  return data;
+}
+const json = (method, body) => ({ method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+
+async function charger() {
+  try {
+    const data = await appel(API);
+    taches = data.map(t => ({ ...t, id: Number(t.id), faite: Number(t.faite) === 1, priorite: Number(t.priorite) }));
+    $('erreur').textContent = '';
+    afficher();
+  } catch (e) { $('erreur').textContent = e.message; }
+}
+
+async function action(promesse) {
+  try { await promesse; await charger(); }
+  catch (e) { $('erreur').textContent = e.message; }
+}
+
+/* ---------- Dates ---------- */
+function aujourdhui() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+function joursEntre(a, b) { // b - a, en jours, dates AAAA-MM-JJ
+  return Math.round((Date.parse(b + 'T00:00:00Z') - Date.parse(a + 'T00:00:00Z')) / 86400000);
+}
+function libelleDate(t) {
+  if (!t.echeance) return null;
+  const ecart = joursEntre(aujourdhui(), t.echeance);
+  if (!t.faite && ecart < 0) return { texte: `En retard de ${-ecart} j`, classe: 'retard' };
+  if (ecart === 0) return { texte: "Aujourd'hui", classe: 'date' };
+  if (ecart === 1) return { texte: 'Demain', classe: 'date' };
+  const d = new Date(t.echeance + 'T00:00:00');
+  return { texte: d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }), classe: 'date' };
+}
+
+/* ---------- Filtrage et tri ---------- */
+function visibles() {
+  const q = etat.recherche.trim().toLowerCase();
+  let l = taches.filter(t =>
+    (etat.filtre === 'toutes' || (etat.filtre === 'faites') === t.faite) &&
+    (!etat.categorie || t.categorie === etat.categorie) &&
+    (!q || t.titre.toLowerCase().includes(q) || (t.categorie || '').toLowerCase().includes(q))
+  );
+  const parDate = (a, b) => (a.echeance || '9999').localeCompare(b.echeance || '9999');
+  l.sort((a, b) => {
+    if (a.faite !== b.faite) return a.faite - b.faite;           // terminées en bas
+    if (etat.tri === 'priorite') return b.priorite - a.priorite || parDate(a, b) || b.id - a.id;
+    if (etat.tri === 'echeance') return parDate(a, b) || b.priorite - a.priorite || b.id - a.id;
+    return b.id - a.id;
+  });
+  return l;
+}
+
+/* ---------- Affichage ---------- */
+function afficher() {
+  // Progression
+  const total = taches.length, faites = taches.filter(t => t.faite).length;
+  $('progression-texte').textContent = total === 0
+    ? 'Aucune tâche pour le moment.'
+    : `${faites} terminée${faites > 1 ? 's' : ''} sur ${total}`;
+  $('progression-barre').style.width = total ? `${Math.round(faites / total * 100)}%` : '0';
+
+  // Compteurs des filtres
+  const compte = { toutes: total, afaire: total - faites, faites };
+  document.querySelectorAll('.filtres button').forEach(b => {
+    b.setAttribute('aria-pressed', String(b.dataset.filtre === etat.filtre));
+    b.querySelector('span').textContent = `(${compte[b.dataset.filtre]})`;
+  });
+
+  // Catégories (liste de suggestions + filtre)
+  const cats = [...new Set(taches.map(t => t.categorie).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr'));
+  if (etat.categorie && !cats.includes(etat.categorie)) etat.categorie = '';
+  $('categories').replaceChildren(...cats.map(c => new Option(c)));
+  $('filtre-categorie').replaceChildren(new Option('Toutes les catégories', ''), ...cats.map(c => new Option(c, c)));
+  $('filtre-categorie').value = etat.categorie;
+
+  // Liste
+  const liste = $('liste');
+  const lignes = visibles();
+  liste.replaceChildren();
+  if (lignes.length === 0) {
+    const li = document.createElement('li');
+    li.className = 'message';
+    li.textContent = total === 0
+      ? 'Aucune tâche. Ajoutez la première ci-dessus.'
+      : 'Aucune tâche ne correspond à ces filtres.';
+    liste.append(li);
+  }
+  for (const t of lignes) liste.append(enEdition === t.id ? ligneEdition(t) : ligneNormale(t));
+
+  $('resume').textContent = lignes.length === total ? '' : `${lignes.length} affichée${lignes.length > 1 ? 's' : ''} sur ${total}`;
+  $('vider').hidden = faites === 0;
+}
+
+function el(tag, props = {}, ...enfants) {
+  const e = Object.assign(document.createElement(tag), props);
+  e.append(...enfants);
+  return e;
+}
+
+function ligneNormale(t) {
+  const li = el('li', { className: `p${t.priorite}` + (t.faite ? ' faite' : '') });
+
+  const cb = el('input', { type: 'checkbox', id: 't' + t.id, checked: t.faite });
+  cb.onchange = () => action(appel(API, json('PUT', { id: t.id, faite: cb.checked })));
+
+  const titre = el('label', { className: 'titre-tache', htmlFor: cb.id, textContent: t.titre }); // textContent : pas d'injection HTML
+  const meta = el('div', { className: 'meta' });
+  if (t.priorite === 2 && !t.faite) meta.append(el('span', { className: 'puce haute', textContent: 'Priorité haute' }));
+  if (t.categorie) meta.append(el('span', { className: 'puce', textContent: t.categorie }));
+  const d = libelleDate(t);
+  if (d) meta.append(el('span', { className: 'puce ' + d.classe, textContent: d.texte }));
+
+  const corps = el('div', { className: 'corps' }, titre);
+  if (meta.children.length) corps.append(meta);
+
+  const modifier = el('button', { type: 'button', textContent: 'Modifier' });
+  modifier.setAttribute('aria-label', 'Modifier la tâche ' + t.titre);
+  modifier.onclick = () => { enEdition = t.id; afficher(); document.querySelector('.edition-form .titre')?.focus(); };
+
+  const suppr = el('button', { type: 'button', className: 'suppr', textContent: 'Supprimer' });
+  suppr.setAttribute('aria-label', 'Supprimer la tâche ' + t.titre);
+  suppr.onclick = () => action(appel(`${API}?id=${t.id}`, { method: 'DELETE' }));
+
+  li.append(cb, corps, el('div', { className: 'actions' }, modifier, suppr));
+  return li;
+}
+
+function ligneEdition(t) {
+  const li = el('li', { className: 'edition p' + t.priorite });
+  const titre = el('input', { type: 'text', className: 'titre', value: t.titre, maxLength: 200, required: true });
+  titre.setAttribute('aria-label', 'Titre de la tâche');
+
+  const prio = el('select');
+  for (const [v, n] of Object.entries(PRIORITES)) prio.append(new Option(n, v, false, Number(v) === t.priorite));
+  const cat = el('input', { type: 'text', value: t.categorie || '', maxLength: 50 });
+  cat.setAttribute('list', 'categories');
+  const date = el('input', { type: 'date', value: t.echeance || '' });
+
+  const champ = (nom, controle) => el('label', { className: 'etiquette' }, nom, controle);
+  const enregistrer = el('button', { type: 'submit', className: 'principal', textContent: 'Enregistrer' });
+  const annuler = el('button', { type: 'button', textContent: 'Annuler' });
+  annuler.onclick = () => { enEdition = null; afficher(); };
+
+  const form = el('form', { className: 'edition-form' },
+    titre,
+    el('div', { className: 'options' }, champ('Priorité', prio), champ('Catégorie', cat), champ('Échéance', date)),
+    el('div', { className: 'boutons' }, enregistrer, annuler));
+  form.onsubmit = (ev) => {
+    ev.preventDefault();
+    enEdition = null;
+    action(appel(API, json('PUT', {
+      id: t.id, titre: titre.value, priorite: Number(prio.value), categorie: cat.value, echeance: date.value,
+    })));
+  };
+  form.onkeydown = (ev) => { if (ev.key === 'Escape') annuler.click(); };
+
+  li.append(form);
+  return li;
+}
+
+/* ---------- Événements ---------- */
+$('formulaire').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  try {
+    await appel(API, json('POST', {
+      titre: $('titre').value, priorite: Number($('priorite').value),
+      categorie: $('categorie').value, echeance: $('echeance').value,
+    }));
+    $('titre').value = '';
+    $('echeance').value = '';
+    $('priorite').value = '1';
+    $('titre').focus();
+    await charger();
+  } catch (e) { $('erreur').textContent = e.message; }
+});
+
+document.querySelectorAll('.filtres button').forEach(b =>
+  b.onclick = () => { etat.filtre = b.dataset.filtre; afficher(); });
+$('recherche').oninput = (e) => { etat.recherche = e.target.value; afficher(); };
+$('filtre-categorie').onchange = (e) => { etat.categorie = e.target.value; afficher(); };
+$('tri').onchange = (e) => { etat.tri = e.target.value; afficher(); };
+
+$('vider').onclick = () => {
+  const n = taches.filter(t => t.faite).length;
+  if (confirm(`Supprimer définitivement ${n} tâche${n > 1 ? 's' : ''} terminée${n > 1 ? 's' : ''} ?`)) {
+    action(appel(`${API}?terminees=1`, { method: 'DELETE' }));
+  }
+};
+
+charger();
+</script>
+</body>
+</html>
+
